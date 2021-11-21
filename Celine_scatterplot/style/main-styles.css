@@ -337,10 +337,13 @@ background-color: #fff;
 ol li{
   float:left;
   width:300px;
-  overflow-x:scroll;
+
 }
 
 ol.cast li p.character{
   font: 0.9em;
   color:#878787;
+}
+.cast_crew{
+  overflow-x:scroll;
 }
