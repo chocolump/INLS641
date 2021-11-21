@@ -157,7 +157,7 @@ function actordata(personid){
                     }
                 }
                 // Create radar chart
-                let radarw = 355,
+                let radarw = 405,
                     radarh = 250
 
                 let colorscale = d3.schemeCategory10;
@@ -178,7 +178,7 @@ function actordata(personid){
                 //Will expect that data is in %'s
                 RadarChart.draw("#chart", d, mycfg);
 
-                let svg = d3.select('#body')
+                /*let svg = d3.select('#body')
                     .selectAll('svg')
                     .append('svg')
                     .attr("width", w + 300)
@@ -219,14 +219,15 @@ function actordata(personid){
                     .attr("fill", "#737373")
                     .text(function (d) {
                         return d;
-                    })
+                    })*/
             }
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             //bar chart construction area
             //Inital values
             let barh = 300
-            let barw = 1300
+            let barw = 1600
             let nbar = 20
+
 
             //function to convert date strings to dates
             let parser = d3.timeParse("%Y-%m-%d")
@@ -279,6 +280,18 @@ function actordata(personid){
                 .attr("class", "line")
                 .style("stroke", "black")
                 .style("stroke-width", "2px");
+
+            //title
+            barsvg.append("text")
+                .attr("class", "header")
+                .attr("x",barw/2-20)
+                .attr("y",barh-30)
+                .attr("dominant-baseline", "hanging")
+                .style("font-size", "20px")
+                .text("Recent Movie Popularity")
+                .attr("text-anchor", "middle")
+                .attr("font-weight", 700)
+
             window.drawBar = function(){
 
                 //Button inputs
@@ -353,7 +366,13 @@ function actordata(personid){
                     .attr("y", function(d) { return y(maxpop - d.vote_average)} )
                     .attr("height", function(d) {return y(d.vote_average)})
                     .attr("width", 40)
-                    .attr("fill", '#33FFE0')
+                    .attr("fill", '#3CABA1')
+                    .on("mouseover", (event,d)=>{
+                        tipMouseOver(event,d);
+                    })
+                    .on("mouseout",(event,d)=>{
+                        tipMouseOut();
+                    })
                     .style('fill-opacity', 0)
                     .transition().delay(!bars.exit().empty() * 500 + !bars.empty() * 500).duration(500)
                     .style('fill-opacity', 1);
@@ -395,11 +414,61 @@ function actordata(personid){
                     .style("font-size", "15px")
                     .text(moviedata[0].release_date);
 
+                //tooltip stuff
+                let bartooltip = d3.select("#barchart")
+                    .append("div")
+                    .attr("class", "tooltip")
+                    .style("opacity", 0);
+
+                // tooltip mouseover event handler
+                function tipMouseOver(event, d) {
+
+                    let [xbartip, ybartip] = d3.pointer(event, svg);
+
+                   /* let revenueText;
+                    let budgetText;
+
+                    (d.revenue / 1e6)/1000 >= 1 ?
+                        revenueText = '$ ' + String(((d.revenue / 1e6)/1000).toFixed(1)) + ' billion' :
+                        revenueText = '$ ' + String((d.revenue / 1e6).toFixed(1)) + ' million';
+
+                    (d.budget / 1e6)/1000 >= 1 ?
+                        budgetText = '$ ' + String(((d.budget / 1e6)/1000).toFixed(1)) + ' billion' :
+                        budgetText = '$ ' + String((d.budget / 1e6).toFixed(1)) + ' million';*/
+
+
+
+                    let htmlChild  = "<b>"+d.original_title+"</b><br/>"+
+                        `<img src='https://image.tmdb.org/t/p/original${d.poster_path}' alt="No photo available" id="tooltip-poster" width='200' height='300'><br/>`+
+                        "<span class = 'releaseText'><b>Release Date : </b>" + d.release_date + "</span><br/>" +
+                        "<span class = 'popText'><b>Popularity : </b>" + d.vote_average + "</span><br/>"
+
+                    // `${x+250 > thisViz.width ? String(x-(x+250-thisViz.width)):String(x+10)}`
+                    // `${y+400 > thisViz.height ? String(y-(y+400-thisViz.height)):String(y+20)}`
+
+                    bartooltip.html(htmlChild)
+                        .style("left", `${String(xbartip + 10)}` + "px")
+                        .style("bottom", `${String(window.innerHeight - ybartip-5)}` + "px")
+                        .style("position", "absolute")
+                        .transition()
+                        .duration(200) // ms
+                        .style("opacity", 1)
+                        .style("display", 'inline-block'); // started as 0!
+
+                };
+                // tooltip mouseout event handler
+                function tipMouseOut() {
+                    d3.selectAll(".tooltip")
+                        .transition()
+                        .duration(200) // ms
+                        .style("opacity", 0)
+                        .style("display", 'none');
+                }
             }
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
             //Net Construction area
-            let w = 655
+            let w = 705
             let h = 350
             //number of circles
             let nnet = 10;
@@ -409,10 +478,11 @@ function actordata(personid){
                 .attr("width", w)
                 .attr("height", h)
 
+            //border
             svg.append("rect")
                 .attr("width", w-100)
                 .attr("height", h-5)
-                .attr("x", 52)
+                .attr("x", 50)
                 .attr("y", 1)
                 .attr("rx", 20)
                 .attr("ry", 20)
@@ -565,6 +635,12 @@ function actordata(personid){
                             .attr("cy", function(d) { return d.randy})
                             .attr("r", function(d) { return r(d.n)})
                             .attr("fill", function(d) { return colorscale[count.findIndex(u => d === u)]})
+                            .on("mouseover", (event,d)=>{
+                                tipMouseOver(event,d);
+                            })
+                            .on("mouseout",(event,d)=>{
+                                tipMouseOut();
+                            })
                             .style("stroke", "black")
                             .style("stroke-opacity", 0)
                             .style("fill-opacity", 0)
@@ -579,6 +655,7 @@ function actordata(personid){
                             .style("stroke-opacity", 0)
                             .remove();
 
+                        //so it goes on top
                         svg.selectAll(".remove").remove()
 
                         //Center circle
@@ -598,11 +675,103 @@ function actordata(personid){
                             .style("stroke", "White")
                             .text(personname)*/
 
+                        //tooltip stuff
+                        let tooltip = d3.select("#netchart")
+                            .append("div")
+                            .attr("class", "tooltip")
+                            .style("opacity", 0);
+
+
+                        // tooltip mouseover event handler
+                        function tipMouseOver(event, d) {
+
+                            fetch(`https://api.themoviedb.org/3/person/${d.id}?api_key=${ApiKey_Thomas}&language=en-US`)
+                                .then(res => res.json())
+                                .then(datatt=> {
+                                    // Latest D3 version (v6 onward) does not recognize d3.event.pageX & d3.event.pageY
+                                    // It changes to d3.pointer(event, target_container) where 2 position values (x, y) of the mouse position are returned.
+                                    // 2nd argument is used to calculate the relative location of the tooltip so it can scale upon when the vessel's width and height change.
+
+                                    let [xtip, ytip] = d3.pointer(event, svg);
+
+                                    //Declaring gender
+                                    function getgender(value){
+                                        if (value === 1) {
+                                            return 'Female';
+                                        } else if (value === 2) {
+                                            return 'Male';
+                                        } else {
+                                            return 'Non-Binary';
+                                        }
+                                    }
+
+                                    //Parsing Birthday;
+                                    let parser = d3.timeParse("%Y-%m-%d")
+
+                                    let birthdate;
+                                    if (datatt.birthday == null) {
+                                        birthdate = new Date()
+                                    } else {
+                                        birthdate = parser(datatt.birthday);
+                                    }
+
+                                    //Name of month
+                                    let formatMonth = d3.timeFormat("%B");
+                                    let month = formatMonth(birthdate)
+
+                                    //Get Age
+                                    let age = new Date().getFullYear() - birthdate.getFullYear()
+
+                                    let bdtext;
+                                    if (datatt.birthday == null) {
+                                        bdtext = 'Unknown'
+                                    } else {
+                                        bdtext = month+' '+birthdate.getDate()+', '+birthdate.getFullYear()+ ' ('+age+' years old)';
+                                    }
+                                    let bptext;
+                                    if (datatt.place_of_birth == null) {
+                                        bptext = 'Unknown'
+                                    } else {
+                                        bptext = datatt.place_of_birth;
+                                    }
+
+                                    let htmlChild =
+                                        "<b>" + datatt.name + "</b><br/>" +
+                                        `<img src='https://image.tmdb.org/t/p/original${datatt.profile_path}' alt="No photo available" id="tooltip-poster" width='200' height='300'><br/>` +
+                                        "<span class = 'gendertext'><b>Gender : </b>" + getgender(datatt.gender) + "</span><br/>" +
+                                        "<span class = 'bdtext'><b>Date of Birth : </b>" + bdtext + "</span><br/>" +
+                                        "<span class = 'bptext'><b>Birthplace : </b>" + bptext + "</span><br/>" +
+                                        "<span class = 'collabtext'><b>Collaborations : </b>" + d.n + "</span>";
+
+                                    // `${x+250 > thisViz.width ? String(x-(x+250-thisViz.width)):String(x+10)}`
+                                    // `${y+400 > thisViz.height ? String(y-(y+400-thisViz.height)):String(y+20)}`
+
+                                    tooltip.html(htmlChild)
+                                        .style("left", `${String(xtip + 10)}` + "px")
+                                        .style("top", `${String(ytip + 20)}` + "px")
+                                        .style("position", "absolute")
+                                        .transition()
+                                        .duration(200) // ms
+                                        .style("opacity", 1)
+                                        .style("display", 'inline-block'); // started as 0!
+
+                                })
+                        };
+                        // tooltip mouseout event handler
+                        function tipMouseOut() {
+                            d3.selectAll(".tooltip")
+                                .transition()
+                                .duration(200) // ms
+                                .style("opacity", 0)
+                                .style("display", 'none');
+                        }
                     })
             }
+
             drawNet()
             drawRadar()
             drawBar()
+
 
         })
 }

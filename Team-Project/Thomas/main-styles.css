@@ -3,6 +3,12 @@ body{
   /* width: 100vw; */
   font-family: poppins;
 }
+.tooltip{
+  border: 1px solid black;
+  border-radius: 15px;
+  padding: 5px 10px;
+  background: #e2e2e2;
+}
 
 header{
   /* border: 1px solid black; */
@@ -119,11 +125,12 @@ display: none;
 }
 
 #person-profile-section{
-  width: 30vw;
+  width: 20vw;
+  margin: 20px 50px 0
 }
 
 #person-viz-section{
-  width: 70vw;
+  width: 100vw;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -144,10 +151,8 @@ display: none;
   margin: 5px 0 15px 0;
 }
 
-
-
 .data-viz-container{
-  width: 50%;
+  width: 46%;
   min-height: 0;
   height: 50%;
 }
@@ -183,9 +188,9 @@ footer>p{
   margin-left: 40px;
 }
 .fa {
-  padding: 20px;
-  font-size: 30px;
-  width: 30px;
+  padding: 15px;
+  font-size: 15px;
+  width: 15px;
   text-align: center;
   text-decoration: none;
   margin: 5px 2px;
@@ -211,3 +216,9 @@ body {
 #chart {
   position: inherit;
 }
+/*
+.center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}*/

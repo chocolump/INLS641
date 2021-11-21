@@ -22,7 +22,7 @@ var RadarChart = {
             radians: 2 * Math.PI,
             opacityArea: 0.5,
             ToRight: 5,
-            TranslateX: 150,
+            TranslateX: 175,
             TranslateY: 40,
             ExtraWidthX: 0,
             ExtraWidthY: 100,
@@ -55,7 +55,7 @@ var RadarChart = {
             .append("rect")
             .attr("width", cfg.w+cfg.ExtraWidthX-100)
             .attr("height", cfg.h+cfg.ExtraWidthY-5)
-            .attr("x", 52)
+            .attr("x", 79)
             .attr("y", 1)
             .attr("rx", 20)
             .attr("ry", 20)
