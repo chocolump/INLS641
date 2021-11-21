@@ -83,7 +83,91 @@ function actordata(personid){
             //Write credits number
             document.getElementById('credits').innerHTML = data.cast.length + data.crew.length;
 
+            // Create radar chart
+            let radarw = 405,
+                radarh = 250
+
+            /*                //Legend titles
+                            let LegendOptions = ['Actor', 'Producer', 'Director', 'Writer'];*/
+
+            //Options for the Radar chart, other than default
+            let options = {
+                w: radarw,
+                h: radarh,
+                levels: 4,
+                ExtraWidthX: 300
+            }
+            let id = "#chart"
+
+            series = 0;
+
+            var cfg = {
+                radius: 5,
+                w: 600,
+                h: 600,
+                factor: 1,
+                factorLegend: .85,
+                levels: 3,
+                radians: 2 * Math.PI,
+                opacityArea: 0.5,
+                ToRight: 5,
+                TranslateX: 175,
+                TranslateY: 40,
+                ExtraWidthX: 0,
+                ExtraWidthY: 100,
+                color: d3.schemeGnBu[9]
+            };
+
+            if('undefined' !== typeof options){
+                for(var i in options){
+                    if('undefined' !== typeof options[i]){
+                        cfg[i] = options[i];
+                    }
+                }
+            }
+
+
+            var radius = cfg.factor*Math.min(cfg.w/2, cfg.h/2);
+            var Format = d3.format('%');
+
+            var g = d3.select(id)
+                .append("svg")
+                .attr("width", cfg.w+cfg.ExtraWidthX)
+                .attr("height", cfg.h+cfg.ExtraWidthY)
+                .append("g")
+                .attr("transform", "translate(" + cfg.TranslateX + "," + cfg.TranslateY + ")");
+
+            d3.select(id).select("svg")
+                .append("rect")
+                .attr("width", cfg.w+cfg.ExtraWidthX-100)
+                .attr("height", cfg.h+cfg.ExtraWidthY-5)
+                .attr("x", 79)
+                .attr("y", 1)
+                .attr("rx", 20)
+                .attr("ry", 20)
+                .style("fill-opacity", 0)
+                .style("stroke", 2)
+                .style("stroke", "black");
+
+            //Text indicating at what % each level is
+            /*for(var j=0; j<cfg.levels; j++){
+                var levelFactor = cfg.factor*radius*((j+1)/cfg.levels);
+                g.selectAll(".levels")
+                    .data([1]) //dummy data
+                    .enter()
+                    .append("svg:text")
+                    .attr("x", function(d){return levelFactor*(1-cfg.factor*Math.sin(0));})
+                    .attr("y", function(d){return levelFactor*(1-cfg.factor*Math.cos(0));})
+                    .attr("class", "legend")
+                    .style("font-family", "sans-serif")
+                    .style("font-size", "10px")
+                    .attr("transform", "translate(" + (cfg.w/2-levelFactor + cfg.ToRight) + ", " + (cfg.h/2-levelFactor) + ")")
+                    .attr("fill", "#737373")
+                    .text(Format((j+1)*cfg.maxValue/cfg.levels));
+            }*/
+
             window.drawRadar = function() {
+
                 //Calculate radar chart values
                 function getdata(d) {
 
@@ -101,9 +185,9 @@ function actordata(personid){
                     for (let j = 0; j < count.length; ++j) {
                         let temp = {}
 
-                            //Scaling so it looks better
-                            temp['value'] = (((count[j][1]/max) + (high/max)/2)/1.5);
-                            temp['id'] = count[j][0];
+                        //Scaling so it looks better
+                        temp['value'] = (((count[j][1]/max) + (high/max)/4)/1.25);
+                        temp['id'] = count[j][0];
 
                         newcount[j] = temp;
                     }
@@ -135,7 +219,7 @@ function actordata(personid){
 
                 //Button inputs
                 let inputs = document.querySelectorAll('input[class="radarcheck"]');
-                let d = []
+                let d = [];
 
                 //Filling data with active inputs
                 let fill = [getdata(actgen),  getdata(dirgen), getdata(prodgen), getdata(writgen)]
@@ -144,39 +228,134 @@ function actordata(personid){
                         d.push(fill[k])
                     }
                 }
-                //Check if all are empty (No problems, just prevents errors
+
+                //Check if all are empty (No problems, just prevents errors)
                 if (d.length === 0){
                     return;
                 }
 
-                //get max scale
-                let maxval = 0.01;
-                for (let i = 0; i < d.length; ++i) {
-                    if (d3.max(d[i], v => v.value ) > maxval){
-                        maxval = d3.max(d[i], v => v.value);
+                for (let i = d[0].length-1; i > 0; --i) {
+                    let counter = 0;
+                    for (let j = 0; j < d.length; ++j) {
+                        counter = counter + d[j][i].value
+                    }
+
+                    if (counter === 0) {
+                        for (let j = 0; j < d.length; ++j) {
+                            d[j].splice(i, 1)
+                        }
                     }
                 }
-                // Create radar chart
-                let radarw = 405,
-                    radarh = 250
+                console.log(d)
 
-                let colorscale = d3.schemeCategory10;
+                //get max scale
+                let maxvalue = 0.01;
+                for (let i = 0; i < d.length; ++i) {
+                    if (d3.max(d[i], v => v.value ) > maxvalue){
+                        maxvalue = d3.max(d[i], v => v.value);
+                    }
+                }
+                var allAxis = (d[0].map(function(i, j){return i.axis}));
+                var total = allAxis.length;
 
-                //Legend titles
-                let LegendOptions = ['Actor', 'Producer', 'Director', 'Writer'];
+                g.selectAll("g").remove()
 
-                //Options for the Radar chart, other than default
-                let mycfg = {
-                    w: radarw,
-                    h: radarh,
-                    maxValue: maxval,
-                    levels: 4,
-                    ExtraWidthX: 300
+                g.selectAll(".segm").remove()
+
+                var axis = g.selectAll(".axis")
+                    .data(allAxis)
+                    .enter()
+                    .append("g")
+                    .attr("class", "axis");
+
+                axis.append("text")
+                    .attr("class", "legend")
+                    .text(function(d){return d})
+                    .style("font-family", "sans-serif")
+                    .style("font-size", "11px")
+                    .attr("text-anchor", "middle")
+                    .attr("dy", "1.5em")
+                    .attr("transform", function(d, i){return "translate(0, -10)"})
+                    .attr("x", function(d, i){return cfg.w/2*(1-cfg.factorLegend*Math.sin(i*cfg.radians/total))-60*Math.sin(i*cfg.radians/total);})
+                    .attr("y", function(d, i){return cfg.h/2*(1-Math.cos(i*cfg.radians/total))-20*Math.cos(i*cfg.radians/total);});
+
+                //Circular segments
+                for(var j=0; j<cfg.levels-1; j++){
+                    var levelFactor = cfg.factor*radius*((j+1)/cfg.levels);
+                    g.selectAll(".levels")
+                        .data(allAxis)
+                        .enter()
+                        .append("svg:line")
+                        .attr("x1", function(d, i){return levelFactor*(1-cfg.factor*Math.sin(i*cfg.radians/total));})
+                        .attr("y1", function(d, i){return levelFactor*(1-cfg.factor*Math.cos(i*cfg.radians/total));})
+                        .attr("x2", function(d, i){return levelFactor*(1-cfg.factor*Math.sin((i+1)*cfg.radians/total));})
+                        .attr("y2", function(d, i){return levelFactor*(1-cfg.factor*Math.cos((i+1)*cfg.radians/total));})
+                        .attr("class", "segm")
+                        .style("stroke", "grey")
+                        .style("stroke-opacity", "0.75")
+                        .style("stroke-width", "0.3px")
+                        .attr("transform", "translate(" + (cfg.w/2-levelFactor) + ", " + (cfg.h/2-levelFactor) + ")");
                 }
 
-                //Call function to draw the Radar chart
-                //Will expect that data is in %'s
-                RadarChart.draw("#chart", d, mycfg);
+                axis.append("line")
+                    .attr("x1", cfg.w/2)
+                    .attr("y1", cfg.h/2)
+                    .attr("x2", function(d, i){return cfg.w/2*(1-cfg.factor*Math.sin(i*cfg.radians/total));})
+                    .attr("y2", function(d, i){return cfg.h/2*(1-cfg.factor*Math.cos(i*cfg.radians/total));})
+                    .attr("class", "line")
+                    .style("stroke", "grey")
+                    .style("stroke-width", "1px");
+
+                g.selectAll("polygon").remove()
+
+
+                d.forEach(function(y, x){
+                    dataValues = [];
+                    g.selectAll(".nodes")
+                        .data(y, function(j, i){
+                            dataValues.push([
+                                cfg.w/2*(1-(parseFloat(Math.max(j.value, 0))/maxvalue)*cfg.factor*Math.sin(i*cfg.radians/total)),
+                                cfg.h/2*(1-(parseFloat(Math.max(j.value, 0))/maxvalue)*cfg.factor*Math.cos(i*cfg.radians/total)),
+                            ]);
+                        });
+
+                    dataValues.push(dataValues[0]);
+
+                    g.selectAll(".area")
+                        .data([dataValues])
+                        .enter()
+                        .append("polygon")
+                        .attr("class", "radar-chart-serie"+series)
+                        .style("stroke-width", "1px")
+                        .style("stroke", "black")
+                        .attr("points",function(d) {
+                            var str="";
+                            for(var pti=0;pti<d.length;pti++){
+                                str=str+d[pti][0]+","+d[pti][1]+" ";
+                            }
+                            return str;
+                        })
+                        .style("fill", function(j, i){return d3.interpolateCool(series/4)})
+                        .style("fill-opacity", cfg.opacityArea)
+                        .on('mouseover', function (d){
+                            z = "polygon."+d3.select(this).attr("class");
+                            g.selectAll("polygon")
+                                .transition(200)
+                                .style("fill-opacity", 0.1);
+                            g.selectAll(z)
+                                .transition(200)
+                                .style("fill-opacity", .7);
+                        })
+                        .on('mouseout', function(){
+                            g.selectAll("polygon")
+                                .transition(200)
+                                .style("fill-opacity", cfg.opacityArea);
+                        });
+
+                    series++;
+
+                });
+                series=0;
 
                 /*let svg = d3.select('#body')
                     .selectAll('svg')
@@ -366,7 +545,7 @@ function actordata(personid){
                     .attr("y", function(d) { return y(maxpop - d.vote_average)} )
                     .attr("height", function(d) {return y(d.vote_average)})
                     .attr("width", 40)
-                    .attr("fill", '#3CABA1')
+                    .attr("fill", function(d,i) { return d3.interpolateCool(i/nbar)})
                     .on("mouseover", (event,d)=>{
                         tipMouseOver(event,d);
                     })
@@ -441,7 +620,7 @@ function actordata(personid){
                     let htmlChild  = "<b>"+d.original_title+"</b><br/>"+
                         `<img src='https://image.tmdb.org/t/p/original${d.poster_path}' alt="No photo available" id="tooltip-poster" width='200' height='300'><br/>`+
                         "<span class = 'releaseText'><b>Release Date : </b>" + d.release_date + "</span><br/>" +
-                        "<span class = 'popText'><b>Popularity : </b>" + d.vote_average + "</span><br/>"
+                        "<span class = 'popText'><b>Rating : </b>" + d.vote_average + "</span><br/>"
 
                     // `${x+250 > thisViz.width ? String(x-(x+250-thisViz.width)):String(x+10)}`
                     // `${y+400 > thisViz.height ? String(y-(y+400-thisViz.height)):String(y+20)}`
@@ -626,7 +805,7 @@ function actordata(personid){
                             .attr("cx", function(d) { return d.randx})
                             .attr("cy", function(d) { return d.randy})
                             .attr("r", function(d) { return r(d.n)})
-                            .attr("fill", function(d) { return colorscale[count.findIndex(u => d === u)]})
+                            .attr("fill", function(d, i) { return d3.interpolateCool(i/nnet)})
 
                         //cricles for network
                         circles.enter().append("circle")
@@ -634,7 +813,7 @@ function actordata(personid){
                             .attr("cx", function(d) { return d.randx})
                             .attr("cy", function(d) { return d.randy})
                             .attr("r", function(d) { return r(d.n)})
-                            .attr("fill", function(d) { return colorscale[count.findIndex(u => d === u)]})
+                            .attr("fill", function(d, i) { return d3.interpolateCool(i/nnet)})
                             .on("mouseover", (event,d)=>{
                                 tipMouseOver(event,d);
                             })
