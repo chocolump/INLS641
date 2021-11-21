@@ -10,6 +10,7 @@
 
 var RadarChart = {
     draw: function(id, d, options){
+        series = 0;
         var cfg = {
             radius: 5,
             w: 600,
@@ -21,9 +22,9 @@ var RadarChart = {
             radians: 2 * Math.PI,
             opacityArea: 0.5,
             ToRight: 5,
-            TranslateX: 170,
-            TranslateY: 20,
-            ExtraWidthX: 100,
+            TranslateX: 150,
+            TranslateY: 40,
+            ExtraWidthX: 0,
             ExtraWidthY: 100,
             color: d3.schemeCategory10
         };
@@ -40,6 +41,7 @@ var RadarChart = {
         var total = allAxis.length;
         var radius = cfg.factor*Math.min(cfg.w/2, cfg.h/2);
         var Format = d3.format('%');
+
         d3.select(id).select("svg").remove();
 
         var g = d3.select(id)
@@ -48,7 +50,18 @@ var RadarChart = {
             .attr("height", cfg.h+cfg.ExtraWidthY)
             .append("g")
             .attr("transform", "translate(" + cfg.TranslateX + "," + cfg.TranslateY + ")");
-        ;
+
+        d3.select(id).select("svg")
+            .append("rect")
+            .attr("width", cfg.w+cfg.ExtraWidthX-100)
+            .attr("height", cfg.h+cfg.ExtraWidthY-5)
+            .attr("x", 52)
+            .attr("y", 1)
+            .attr("rx", 20)
+            .attr("ry", 20)
+            .style("fill-opacity", 0)
+            .style("stroke", 2)
+            .style("stroke", "black");
 
         var tooltip;
 
@@ -86,8 +99,6 @@ var RadarChart = {
                 .attr("fill", "#737373")
                 .text(Format((j+1)*cfg.maxValue/cfg.levels));
         }*/
-
-        series = 0;
 
         var axis = g.selectAll(".axis")
             .data(allAxis)
@@ -132,7 +143,7 @@ var RadarChart = {
                 .enter()
                 .append("polygon")
                 .attr("class", "radar-chart-serie"+series)
-                .style("stroke-width", "2px")
+                .style("stroke-width", "1px")
                 .style("stroke", cfg.color[series])
                 .attr("points",function(d) {
                     var str="";
@@ -165,10 +176,5 @@ var RadarChart = {
         d.forEach(function(y, x){
             series++;
         });
-        //Tooltip
-        tooltip = g.append('text')
-            .style('opacity', 0)
-            .style('font-family', 'sans-serif')
-            .style('font-size', '13px');
     }
 };

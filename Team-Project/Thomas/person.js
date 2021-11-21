@@ -1,4 +1,5 @@
 const ApiKey_Thomas = '844ff7cd27e44a9424544c4b3c852920';
+let netdatain =[];
 
 //For testing
 testid = 10859
@@ -11,6 +12,7 @@ function actordata(personid){
         .then(res => res.json())
         .then(data => {
 
+            personname = data.name
             //Writing name
             document.getElementById('name').innerHTML = data.name;
 
@@ -21,19 +23,17 @@ function actordata(personid){
 
             //Declaring gender
             function getgender(value){
-                gen = 'Default'
-                if (value == 1) {
-                    gen = 'Female';
-                } else if (value == 2) {
-                    gen = 'Male';
+                if (value === 1) {
+                    return 'Female';
+                } else if (value === 2) {
+                    return 'Male';
                 } else {
-                    gen = 'Non-Binary';
+                    return 'Non-Binary';
                 }
             }
 
             //Writing gender
-            getgender(data.gender);
-            document.getElementById('gender').innerHTML = gen;
+            document.getElementById('gender').innerHTML = getgender(data.gender);
 
             //Parsing Birthday;
             let parser = d3.timeParse("%Y-%m-%d")
@@ -66,10 +66,12 @@ function actordata(personid){
 
             let filler = data.genres
 
+            //list of genre names for radar
             genrelist = filler.map(item => {
                 return { axis: item.name, id: item.id };
             });
-            for (var i = 0; i < genrelist.length; ++i) {
+            //give them 0 value now to avoid errors
+            for (let i = 0; i < genrelist.length; ++i) {
                 genrelist[i]['value'] = 0;
             }
         })
@@ -78,57 +80,58 @@ function actordata(personid){
         .then(res => res.json())
         .then(data => {
 
-            //Calculate movie credit number
-            let totcredits = data.cast.length + data.crew.length;
-
             //Write credits number
-            document.getElementById('credits').innerHTML = totcredits;
+            document.getElementById('credits').innerHTML = data.cast.length + data.crew.length;
 
-            //Calculate radar chart values
-            function getdata(d) {
-
-                let count = d3.flatRollup(d, v => v.length, d => d)
-                let max = 0
-                for (var i = 0; i < count.length; ++i) {
-                    max += count[i][1]
-                }
-                let newcount = [];
-
-                for (var i = 0; i < count.length; ++i) {
-                    let temp = {}
-
-                        temp['value'] = count[i][1] / max;
-                        temp['id'] = count[i][0];
-
-                    newcount[i] = temp;
-                }
-
-                let mergedlist = genrelist.map(d => ({...d, ...newcount.find(v => v.id === d.id)})).map(({id, ...d}) => d);
-                return mergedlist
-            }
-
-            let actgen = d3.merge(data.cast.map(function (d) {
-                return d.genre_ids
-            })).filter(Boolean).sort();
-
-            let dirgen = Array.prototype.concat.apply([], data.crew.map(function (d) {
-                if (d.department == 'Director') {
-                    return d.genre_ids
-                }
-            })).filter( Boolean ).sort();
-            let prodgen = Array.prototype.concat.apply([], data.crew.map(function (d) {
-                if (d.department == 'Production') {
-                    return d.genre_ids
-                }
-            })).filter( Boolean ).sort();
-            let writgen = Array.prototype.concat.apply([], data.crew.map(function (d) {
-                if (d.department == 'Writing') {
-                    return d.genre_ids
-                }
-            })).filter( Boolean ).sort();
-
-            //Button interaction
             window.drawRadar = function() {
+                //Calculate radar chart values
+                function getdata(d) {
+
+                    let count = d3.flatRollup(d, v => v.length, m => m)
+                    let max = 0
+                    let high = 0
+                    for (let i = 0; i < count.length; ++i) {
+                        max += count[i][1]
+                        if (count[i][1] > high) {
+                            high = count[i][1]
+                        }
+                    }
+                    let newcount = [];
+
+                    for (let j = 0; j < count.length; ++j) {
+                        let temp = {}
+
+                            //Scaling so it looks better
+                            temp['value'] = (((count[j][1]/max) + (high/max)/2)/1.5);
+                            temp['id'] = count[j][0];
+
+                        newcount[j] = temp;
+                    }
+
+                    return genrelist.map(d => ({...d, ...newcount.find(v => v.id === d.id)})).map(({id, ...d}) => d);
+                }
+
+                let actgen = d3.merge(data.cast.map(function (d) {
+                    return d.genre_ids
+                })).filter(Boolean).sort();
+
+                let dirgen = Array.prototype.concat.apply([], data.crew.map(function (d) {
+                    if (d.department === 'Director') {
+                        return d.genre_ids
+                    }
+                })).filter( Boolean ).sort();
+                let prodgen = Array.prototype.concat.apply([], data.crew.map(function (d) {
+                    if (d.department === 'Production') {
+                        return d.genre_ids
+                    }
+                })).filter( Boolean ).sort();
+                let writgen = Array.prototype.concat.apply([], data.crew.map(function (d) {
+                    if (d.department === 'Writing') {
+                        return d.genre_ids
+                    }
+                })).filter( Boolean ).sort();
+
+
 
                 //Button inputs
                 let inputs = document.querySelectorAll('input[class="radarcheck"]');
@@ -136,35 +139,36 @@ function actordata(personid){
 
                 //Filling data with active inputs
                 let fill = [getdata(actgen),  getdata(dirgen), getdata(prodgen), getdata(writgen)]
-                for (var i = 0; i < fill.length; ++i) {
-                    if (inputs[i].checked == true) {
-                        d.push(fill[i])
+                for (let k = 0; k < fill.length; ++k) {
+                    if (inputs[k].checked === true) {
+                        d.push(fill[k])
                     }
                 }
                 //Check if all are empty (No problems, just prevents errors
-                if (d.length == 0){
+                if (d.length === 0){
                     return;
                 }
 
                 //get max scale
-                maxval = 0.01;
-                for (var i = 0; i < d.length; ++i) {
+                let maxval = 0.01;
+                for (let i = 0; i < d.length; ++i) {
                     if (d3.max(d[i], v => v.value ) > maxval){
                         maxval = d3.max(d[i], v => v.value);
                     }
                 }
                 // Create radar chart
-                let w = 300,
-                    h = 300
+                let radarw = 355,
+                    radarh = 250
 
                 let colorscale = d3.schemeCategory10;
 
                 //Legend titles
                 let LegendOptions = ['Actor', 'Producer', 'Director', 'Writer'];
+
                 //Options for the Radar chart, other than default
                 let mycfg = {
-                    w: w,
-                    h: h,
+                    w: radarw,
+                    h: radarh,
                     maxValue: maxval,
                     levels: 4,
                     ExtraWidthX: 300
@@ -174,33 +178,19 @@ function actordata(personid){
                 //Will expect that data is in %'s
                 RadarChart.draw("#chart", d, mycfg);
 
-                ////////////////////////////////////////////
-                /////////// Initiate legend ////////////////
-                ////////////////////////////////////////////
-
-                var svg = d3.select('#body')
+                let svg = d3.select('#body')
                     .selectAll('svg')
                     .append('svg')
                     .attr("width", w + 300)
                     .attr("height", h)
 
-                //Create the title for the legend
-                var text = svg.append("text")
-                    .attr("class", "title")
-                    .attr('transform', 'translate(90,0)')
-                    .attr("x", w - 70)
-                    .attr("y", 10)
-                    .attr("font-size", "12px")
-                    .attr("fill", "#404040")
-                    .text("What % of owners use a specific service in a week");
-
                 //Initiate Legend
-                var legend = svg.append("g")
+                let legend = svg.append("g")
                     .attr("class", "legend")
                     .attr("height", 100)
                     .attr("width", 200)
-                    .attr('transform', 'translate(90,20)')
-                ;
+                    .attr('transform', 'translate(90,20)');
+
                 //Create colour squares
                 legend.selectAll('rect')
                     .data(LegendOptions)
@@ -231,126 +221,389 @@ function actordata(personid){
                         return d;
                     })
             }
-            //bar chart
+            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //bar chart construction area
+            //Inital values
+            let barh = 300
+            let barw = 1300
+            let nbar = 20
 
+            //function to convert date strings to dates
+            let parser = d3.timeParse("%Y-%m-%d")
+            let formatter = d3.timeFormat("%Y")
+            let formatter1 = d3.timeFormat("%j")
+            function reformat(date) {
+                return(formatter(parser(date))+formatter1(parser(date))*0.001)
+            }
+
+            //x scale for chart
+            let x = d3.scaleLinear()
+                .domain([nbar, 0])
+                .range([50, barw-100]);
+
+            //inverse scale for transformed text (title)
+            /*let xi = d3.scaleLinear()
+                .domain([nbar, 0])
+                .range([barw-100, 50]);*/
+
+            //Create new svg for chart
+            let barsvg = d3.select("#barchart").append("svg")
+                .attr("width", barw)
+                .attr("height", barh)
+
+            //y axis title
+            barsvg.append("text")
+                .attr("x",100)
+                .attr("y",-90)
+                .attr("dominant-baseline", "hanging")
+                .attr("transform", "rotate(90,0,0)")
+                .style("font-size", "15px")
+                .text('Average Rating');
+
+            //y axis
+            barsvg.append("line")
+                .attr("x1", x(nbar)+50)
+                .attr("y1", 0)
+                .attr("x2", x(nbar)+50)
+                .attr("y2", barh)
+                .attr("class", "line")
+                .style("stroke", "black")
+                .style("stroke-width", "2px");
+
+            //x axis
+            barsvg.append("line")
+                .attr("x1", x(nbar)+50)
+                .attr("y1", barh-48)
+                .attr("x2", x(0)+43)
+                .attr("y2", barh-48)
+                .attr("class", "line")
+                .style("stroke", "black")
+                .style("stroke-width", "2px");
             window.drawBar = function(){
-
-                let h = 300
-                let w = 1300
-                let nbar = 20
-
 
                 //Button inputs
                 let inputsBar = document.querySelectorAll('input[class="barcheck"]');
-                let moviedata0 =[];
+
+                let moviedata0 = [];
 
                 //Filling data with active inputs
-                if (inputsBar[0].checked == true) {
+                if (inputsBar[0].checked === true) {
                     moviedata0.push(data.cast)
                 }
-                for (var i = 0; i < data.crew.length; ++i) {
-                    if (inputsBar[1].checked == true && data.crew[i].department == "Director") {
+                for (let i = 0; i < data.crew.length; ++i) {
+                    if (inputsBar[1].checked === true && data.crew[i].department === "Director") {
                         moviedata0.push(data.crew[i])
                     }
-                    if (inputsBar[2].checked == true && data.crew[i].department == "Production") {
+                    if (inputsBar[2].checked === true && data.crew[i].department === "Production") {
                         moviedata0.push(data.crew[i])
                     }
-                    if (inputsBar[3].checked == true && data.crew[i].department == "Writing") {
+                    if (inputsBar[3].checked === true && data.crew[i].department === "Writing") {
                         moviedata0.push(data.crew[i])
                     }
                 }
 
-                let moviedata1 = moviedata0.flat().sort((a, b) => d3.descending(a.release_date, b.release_date))
+                //More filler variables because I dont know how to do things better, sorting by date
+                let moviedata1 = moviedata0.flat()
+                    .sort((a, b) =>
+                        d3.descending(reformat(a.release_date), reformat(b.release_date)))
 
-                for (var i = 0; i < moviedata1.length; ++i) {
-                    if (moviedata1[i].vote_average == 0) {
-                        moviedata1.splice(i,1)
+                //Removing movies with no vote_average (unreleased mostly)
+                for (let j = moviedata1.length -1; j >= 0; j--) {
+                    if (moviedata1[j].vote_average === 0) {
+                        moviedata1.splice(j,1)
                     }
                 }
+
                 //Check if all are empty (No problems, just prevents errors
-                if (moviedata1.length == 0){
+                if (moviedata1.length === 0){
                     return;
                 }
 
-                let moviedata = moviedata1.slice(0,nbar)
+                //Merge identical movies and cutting to 20
+                let moviedata = moviedata1.reduce((prev, cur) => {
+                    const index = prev.findIndex(v => v.id === cur.id);
+                    if (index === -1) {
+                        prev.push(cur);
+                    }
+                    return prev;
+                }, []).slice(0,nbar)
 
+                //Finding max for scales
                 let maxpop = d3.max(moviedata, function(d) { return d.vote_average; });
 
-                let x = d3.scaleLinear()
-                    .domain([nbar, 0])
-                    .range([50, w-100]);
-
+                //y scale for chart
                 let y = d3.scaleLinear()
                     .domain([0, maxpop])
-                    .range([0, h-50]);
+                    .range([0, barh-50]);
 
-                d3.select("#barchart").select("svg").remove();
+                //create svg
+                let bars = barsvg.selectAll(".bar").data(moviedata, function(d) { return d.id; })
 
-                let svg = d3.select("#barchart").append("svg")
-                    .attr("width", w)
-                    .attr("height", h)
+                //update
+                bars.transition().delay(!bars.exit().empty() * 500).duration(500)
+                    .attr("class", "bar")
+                    .attr("x", function(d,i) { return x(i); })
+                    .attr("y", function(d) { return y(maxpop - d.vote_average)} )
+                    .attr("height", function(d) {return y(d.vote_average)})
 
-                let bars = svg.selectAll().data(moviedata, function(d) { return d.id; })
-
+                //create bars
                 bars.enter().append("rect")
+                    .attr("class", "bar")
                     .attr("x", function(d,i) { return x(i); })
                     .attr("y", function(d) { return y(maxpop - d.vote_average)} )
                     .attr("height", function(d) {return y(d.vote_average)})
                     .attr("width", 40)
                     .attr("fill", '#33FFE0')
+                    .style('fill-opacity', 0)
+                    .transition().delay(!bars.exit().empty() * 500 + !bars.empty() * 500).duration(500)
+                    .style('fill-opacity', 1);
 
-                let timetext = moviedata[moviedata.length-1].release_date;
+                //removing old bars
+                bars.exit()
+                    .transition().duration(500)
+                    .style('fill-opacity', 0)
+                    .remove();
 
-                if (moviedata[moviedata.length-1].release_date.length == 0) {
-                    timetext = "The Beginning of Time"
-                };
-
-                svg.append("text")
-                    .attr("x", x(nbar)+55)
-                    .attr("y", h-30)
+                //Movie title text, not sure if we need this, this was made pre tool tips
+                /*bars.enter().append("text")
+                    .attr("x", barh - 53)
+                    .attr("y", function(d,i) { return xi(i) - barw +23 })
                     .attr("dominant-baseline", "hanging")
-                    .style("font-family", "sans-serif")
+                    .attr("text-anchor", "end")
                     .style("font-size", "15px")
-                    .text(timetext);
+                    .attr("transform", "rotate(90,0,0)")
+                    .text(function(d) {return d.title.substring(0, 25);});*/
 
-                svg.append("text")
-                    .attr("x",x(0)-35)
-                    .attr("y",h-30)
+                //Clear old date
+                barsvg.selectAll(".date").remove()
+
+                //Left date
+                barsvg.append("text")
+                    .attr("class", "date")
+                    .attr("x", x(nbar)+55)
+                    .attr("y", barh-30)
                     .attr("dominant-baseline", "hanging")
-                    .style("font-family", "sans-serif")
+                    .style("font-size", "15px")
+                    .text(moviedata[moviedata.length-1].release_date);
+
+                //right date
+                barsvg.append("text")
+                    .attr("class", "date")
+                    .attr("x",x(0)-35)
+                    .attr("y",barh-30)
+                    .attr("dominant-baseline", "hanging")
                     .style("font-size", "15px")
                     .text(moviedata[0].release_date);
 
-                svg.append("text")
-                    .attr("x",100)
-                    .attr("y",-90)
-                    .attr("dominant-baseline", "hanging")
-                    .attr("transform", "rotate(90,0,0)")
-                    .style("font-family", "sans-serif")
-                    .style("font-size", "15px")
-                    .text('Average Rating');
-
-                svg.append("line")
-                    .attr("x1", x(nbar)+50)
-                    .attr("y1", 0)
-                    .attr("x2", x(nbar)+50)
-                    .attr("y2", h)
-                    .attr("class", "line")
-                    .style("stroke", "black")
-                    .style("stroke-width", "2px");
-
-                svg.append("line")
-                    .attr("x1", x(nbar)+50)
-                    .attr("y1", h-50)
-                    .attr("x2", x(0)+43)
-                    .attr("y2", h-50)
-                    .attr("class", "line")
-                    .style("stroke", "black")
-                    .style("stroke-width", "2px");
             }
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            //Net Construction area
+            let w = 655
+            let h = 350
+            //number of circles
+            let nnet = 10;
+
+            //Create new svg for chart
+            let svg = d3.select("#netchart").append("svg")
+                .attr("width", w)
+                .attr("height", h)
+
+            svg.append("rect")
+                .attr("width", w-100)
+                .attr("height", h-5)
+                .attr("x", 52)
+                .attr("y", 1)
+                .attr("rx", 20)
+                .attr("ry", 20)
+                .style("fill-opacity", 0)
+                .style("stroke", 2)
+                .style("stroke", "black")
+
+            window.drawNet = function() {
+
+                //Get inputs
+                let inputsNet = document.querySelectorAll('input[class="netcheck"]');
+                let movienet =[];
+
+                //Filling data with active inputs
+                if (inputsNet[0].checked === true) {
+                    movienet.push(data.cast)
+                }
+                for (let i = 0; i < data.crew.length; ++i) {
+                    if (inputsNet[1].checked === true && data.crew[i].department === "Director") {
+                        movienet.push(data.crew[i])
+                    }
+                    if (inputsNet[2].checked === true && data.crew[i].department === "Production") {
+                        movienet.push(data.crew[i])
+                    }
+                    if (inputsNet[3].checked === true && data.crew[i].department === "Writing") {
+                        movienet.push(data.crew[i])
+                    }
+                }
+
+                //Check if all are empty (No problems, just prevents errors
+                if (movienet.length === 0){
+                    return;
+                }
+
+                //Merge identical movies
+                let finalmov = movienet.flat().reduce((prev, cur) => {
+                    const index = prev.findIndex(v => v.id === cur.id);
+                    if (index === -1) {
+                        prev.push(cur);
+                    }
+                    return prev;
+                }, [])
+
+                let promises = [];
+
+                for(let dataPt of finalmov){
+                    // Push all api fetch commands inside the promise array
+                    promises.push(
+                        fetch(`https://api.themoviedb.org/3/movie/${dataPt.id}/credits?api_key=${ApiKey_Thomas}&language=en-US`)
+                            .then(res => res.json())
+                            .then(datan=>{
+                                netdatain.push(datan.crew);
+                                netdatain.push(datan.cast);
+                            })
+                    );
+                }
+                // Set a Promise.all(), which take a iterable as input, an iterable like array [] or object {}, once when resolved (finished), it will process next lines of codes in the subsequent .then(...)
+                Promise
+                    .all(promises)
+                    .then(()=>{
+                        return data;
+                    })
+                    .then(datanet => {
+
+                        //fixing up net data
+                        let finalnet = netdatain.flat().map(function (d) {
+                            return d.id
+                        }).filter(Boolean);
+
+                        //reset old values
+                        netdatain = [];
+
+                        //counting n
+                        let tempcount = d3.flatRollup(finalnet,
+                            v => v.length,
+                            c => c,
+                            ).sort((a, b) => -(a[1] - b[1])).slice(1,nnet+1);
+
+                        //to get random values
+                        let count = tempcount.map(function(d){
+                            let temp = {}
+                            temp['id'] = d[0];
+                            temp['n'] = d[1];
+                            //to prevent offscreening
+                            temp['randx'] = Math.random(d[0]) * (w-200)+100;
+                            temp['randy'] = Math.random(d[0]) * (h-120)+60;
+                            //to prevent overlapping with middle
+                            if (w/2-70 < temp['randx'] && temp['randx'] < w/2 && h/2-70 < temp['randy'] && h/2+70 > temp['randy']) {
+                                temp['randx'] = w/2-70
+                            }
+                            if (w/2 < temp['randx'] && temp['randx'] < w/2+70 && h/2-70 < temp['randy'] && h/2+70 > temp['randy']) {
+                                temp['randx'] = w/2+70
+                            }
+                            return temp
+                        });
+
+                        //max and min for scale
+                        let maxnet = d3.max(count, function(d) { return d.n; });
+                        let minnet = d3.min(count, function(d) { return d.n; });
+
+                        //r scale for chart
+                        let r = d3.scaleLinear()
+                            .domain([minnet, maxnet])
+                            .range([20, 50]);
+
+                        let colorscale = d3.schemeCategory10
+
+                        //connectors
+                        let lines = svg.selectAll(".lin").data(count, function(d) { return d.id; })
+
+                        //update
+                        lines.transition().duration(500)
+                            .attr("x1", w/2)
+                            .attr("y1", h/2)
+                            .attr("x2", function(d) { return d.randx})
+                            .attr("y2", function(d) { return d.randy})
+
+                        //create
+                        lines.enter().append("line")
+                            .attr("class", "lin")
+                            .attr("x1", w/2)
+                            .attr("y1", h/2)
+                            .attr("x2", function(d) { return d.randx})
+                            .attr("y2", function(d) { return d.randy})
+                            .style("stroke", "black")
+                            .style("stroke-width", "0px")
+                            .transition().delay(300).duration(300)
+                            .style("stroke-width", "2px")
+
+                        //remove
+                        lines.exit()
+                            .transition().duration(100)
+                            .style("stroke-width", "0px")
+                            .remove();
+
+                        //create svg
+                        let circles = svg.selectAll(".circs").data(count, function(d) { return d.id; })
+
+                        //update
+                        circles.transition().duration(500)
+                            .attr("cx", function(d) { return d.randx})
+                            .attr("cy", function(d) { return d.randy})
+                            .attr("r", function(d) { return r(d.n)})
+                            .attr("fill", function(d) { return colorscale[count.findIndex(u => d === u)]})
+
+                        //cricles for network
+                        circles.enter().append("circle")
+                            .attr("class", "circs")
+                            .attr("cx", function(d) { return d.randx})
+                            .attr("cy", function(d) { return d.randy})
+                            .attr("r", function(d) { return r(d.n)})
+                            .attr("fill", function(d) { return colorscale[count.findIndex(u => d === u)]})
+                            .style("stroke", "black")
+                            .style("stroke-opacity", 0)
+                            .style("fill-opacity", 0)
+                            .transition().duration(500)
+                            .style('fill-opacity', 1)
+                            .style("stroke-opacity", 1);
+
+                        //removing old net chart
+                        circles.exit()
+                            .transition().duration(300)
+                            .style('fill-opacity', 0)
+                            .style("stroke-opacity", 0)
+                            .remove();
+
+                        svg.selectAll(".remove").remove()
+
+                        //Center circle
+                        svg.append("circle")
+                            .attr("class", "remove")
+                            .attr("cx", w/2)
+                            .attr("cy", h/2)
+                            .attr("r", 15)
+                            .attr("fill", "black");
+
+                        /*//person name
+                        svg.append("text")
+                            .attr("class", "remove")
+                            .attr("x", w/2)
+                            .attr("y", h/2-5)
+                            .attr("text-anchor", "middle")
+                            .style("stroke", "White")
+                            .text(personname)*/
+
+                    })
+            }
+            drawNet()
             drawRadar()
             drawBar()
+
         })
 }
 actordata(testid)
-
