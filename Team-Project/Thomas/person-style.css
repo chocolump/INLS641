@@ -10,6 +10,13 @@ body{
   background: #e2e2e2;
 }
 
+.tooltipnet{
+  border: 1px solid black;
+  border-radius: 15px;
+  padding: 5px 10px;
+  background: #e2e2e2;
+}
+
 header{
   /* border: 1px solid black; */
   padding: 4vh 0 1vh 30px;

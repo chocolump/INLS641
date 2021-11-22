@@ -99,9 +99,7 @@ function actordata(personid){
             }
             let id = "#chart"
 
-            series = 0;
-
-            var cfg = {
+            let cfg = {
                 radius: 5,
                 w: 600,
                 h: 600,
@@ -119,25 +117,19 @@ function actordata(personid){
             };
 
             if('undefined' !== typeof options){
-                for(var i in options){
+                for(let i in options){
                     if('undefined' !== typeof options[i]){
                         cfg[i] = options[i];
                     }
                 }
             }
 
+            let radius = cfg.factor*Math.min(cfg.w/2, cfg.h/2);
 
-            var radius = cfg.factor*Math.min(cfg.w/2, cfg.h/2);
-            var Format = d3.format('%');
-
-            var g = d3.select(id)
-                .append("svg")
+            d3.select(id).append("svg")
                 .attr("width", cfg.w+cfg.ExtraWidthX)
                 .attr("height", cfg.h+cfg.ExtraWidthY)
-                .append("g")
-                .attr("transform", "translate(" + cfg.TranslateX + "," + cfg.TranslateY + ")");
-
-            d3.select(id).select("svg")
+                .attr("class", "box")
                 .append("rect")
                 .attr("width", cfg.w+cfg.ExtraWidthX-100)
                 .attr("height", cfg.h+cfg.ExtraWidthY-5)
@@ -148,6 +140,8 @@ function actordata(personid){
                 .style("fill-opacity", 0)
                 .style("stroke", 2)
                 .style("stroke", "black");
+
+            let g = d3.select(".box").append("g").attr("transform", "translate(" + cfg.TranslateX + "," + cfg.TranslateY + ")")
 
             //Text indicating at what % each level is
             /*for(var j=0; j<cfg.levels; j++){
@@ -220,12 +214,14 @@ function actordata(personid){
                 //Button inputs
                 let inputs = document.querySelectorAll('input[class="radarcheck"]');
                 let d = [];
-
+                //for tracking
+                let netids = [];
                 //Filling data with active inputs
                 let fill = [getdata(actgen),  getdata(dirgen), getdata(prodgen), getdata(writgen)]
                 for (let k = 0; k < fill.length; ++k) {
                     if (inputs[k].checked === true) {
                         d.push(fill[k])
+                        netids.push(k+1)
                     }
                 }
 
@@ -246,7 +242,6 @@ function actordata(personid){
                         }
                     }
                 }
-                console.log(d)
 
                 //get max scale
                 let maxvalue = 0.01;
@@ -255,107 +250,151 @@ function actordata(personid){
                         maxvalue = d3.max(d[i], v => v.value);
                     }
                 }
-                var allAxis = (d[0].map(function(i, j){return i.axis}));
-                var total = allAxis.length;
 
-                g.selectAll("g").remove()
+                let allAxis = (d[0].map(function(i, j){return i.axis}));
+                let total = allAxis.length;
 
-                g.selectAll(".segm").remove()
-
-                var axis = g.selectAll(".axis")
-                    .data(allAxis)
-                    .enter()
-                    .append("g")
-                    .attr("class", "axis");
-
-                axis.append("text")
-                    .attr("class", "legend")
-                    .text(function(d){return d})
-                    .style("font-family", "sans-serif")
-                    .style("font-size", "11px")
-                    .attr("text-anchor", "middle")
-                    .attr("dy", "1.5em")
-                    .attr("transform", function(d, i){return "translate(0, -10)"})
-                    .attr("x", function(d, i){return cfg.w/2*(1-cfg.factorLegend*Math.sin(i*cfg.radians/total))-60*Math.sin(i*cfg.radians/total);})
-                    .attr("y", function(d, i){return cfg.h/2*(1-Math.cos(i*cfg.radians/total))-20*Math.cos(i*cfg.radians/total);});
+                //more data calcs for polygons
+                let dataValues2 = [];
+                for (let i = 0; i < d.length; ++i) {
+                    let dataValues = [];
+                    for (let j = 0; j < d[i].length; ++j) {
+                        dataValues.push([
+                            cfg.w / 2 * (1 - (parseFloat(Math.max(d[i][j].value, 0)) / maxvalue) * cfg.factor * Math.sin(j * cfg.radians / total)),
+                            cfg.h / 2 * (1 - (parseFloat(Math.max(d[i][j].value, 0)) / maxvalue) * cfg.factor * Math.cos(j * cfg.radians / total)),
+                        ])
+                    }
+                    dataValues.push(dataValues[0]);
+                    dataValues2.push(dataValues)
+                }
 
                 //Circular segments
-                for(var j=0; j<cfg.levels-1; j++){
-                    var levelFactor = cfg.factor*radius*((j+1)/cfg.levels);
-                    g.selectAll(".levels")
-                        .data(allAxis)
-                        .enter()
-                        .append("svg:line")
+                for( j=0; j<cfg.levels-1; j++){
+                    levelFactor = cfg.factor*radius*((j+1)/cfg.levels);
+
+                    let loop = g.selectAll(".segm"+j).data(allAxis, function(d) { return d})
+
+                    loop.transition().delay(!loop.exit().empty() * 500).duration(500)
+                        .attr("x1", function(d, i){return levelFactor*(1-cfg.factor*Math.sin(i*cfg.radians/total));})
+                        .attr("y1", function(d, i){return levelFactor*(1-cfg.factor*Math.cos(i*cfg.radians/total));})
+                        .attr("x2", function(d, i){return levelFactor*(1-cfg.factor*Math.sin((i+1)*cfg.radians/total));})
+                        .attr("y2", function(d, i){return levelFactor*(1-cfg.factor*Math.cos((i+1)*cfg.radians/total));});
+
+                    loop.enter()
+                        .append("line")
                         .attr("x1", function(d, i){return levelFactor*(1-cfg.factor*Math.sin(i*cfg.radians/total));})
                         .attr("y1", function(d, i){return levelFactor*(1-cfg.factor*Math.cos(i*cfg.radians/total));})
                         .attr("x2", function(d, i){return levelFactor*(1-cfg.factor*Math.sin((i+1)*cfg.radians/total));})
                         .attr("y2", function(d, i){return levelFactor*(1-cfg.factor*Math.cos((i+1)*cfg.radians/total));})
-                        .attr("class", "segm")
+                        .attr("class", "segm"+j)
                         .style("stroke", "grey")
                         .style("stroke-opacity", "0.75")
-                        .style("stroke-width", "0.3px")
-                        .attr("transform", "translate(" + (cfg.w/2-levelFactor) + ", " + (cfg.h/2-levelFactor) + ")");
+                        .style("stroke-width", "0px")
+                        .attr("transform", "translate(" + (cfg.w/2-levelFactor) + ", " + (cfg.h/2-levelFactor) + ")")
+                        .transition().delay(!loop.exit().empty() * 300 + !loop.empty() * 300).duration(500)
+                        .style("stroke-width", "0.3px");
+
+                    //circ segments remove
+                    loop.exit()
+                        .transition().duration(500)
+                        .style("stroke-width", "0px").remove();
                 }
 
-                axis.append("line")
+                //axis text update append and remove
+                let axistext = g.selectAll(".legend").data(allAxis, function(d) { return d});
+
+                axistext.transition().delay(!axistext.exit().empty() * 500).duration(500)
+                    .attr("transform", function(d, i){return "translate(0, -10)"})
+                    .attr("x", function(d, i){return cfg.w/2*(1-cfg.factorLegend*Math.sin(i*cfg.radians/total))-60*Math.sin(i*cfg.radians/total);})
+                    .attr("y", function(d, i){return cfg.h/2*(1-Math.cos(i*cfg.radians/total))-20*Math.cos(i*cfg.radians/total);});
+
+                axistext.enter().append("text")
+                    .attr("class", "legend")
+                    .text(function(d){return d})
+                    .style("font-family", "sans-serif")
+                    .attr("text-anchor", "middle")
+                    .attr("dy", "1.5em")
+                    .attr("transform", function(d, i){return "translate(0, -10)"})
+                    .attr("x", function(d, i){return cfg.w/2*(1-cfg.factorLegend*Math.sin(i*cfg.radians/total))-60*Math.sin(i*cfg.radians/total);})
+                    .attr("y", function(d, i){return cfg.h/2*(1-Math.cos(i*cfg.radians/total))-20*Math.cos(i*cfg.radians/total);})
+                    .style("font-size", "0px")
+                    .transition().delay(!axistext.exit().empty() * 300 + !axistext.empty() * 300).duration(500)
+                    .style("font-size", "11px");
+
+                axistext.exit()
+                    .transition().duration(500)
+                    .style("font-size", "0px").remove();
+
+                //axislines update append and remove
+                let axislines = g.selectAll(".aline").data(allAxis, function(d) { return d});
+
+                axislines.transition().delay(!axislines.exit().empty() * 500).duration(500)
+                    .attr("x2", function(d, i){return cfg.w/2*(1-cfg.factor*Math.sin(i*cfg.radians/total));})
+                    .attr("y2", function(d, i){return cfg.h/2*(1-cfg.factor*Math.cos(i*cfg.radians/total));});
+
+                axislines.enter().append("line")
                     .attr("x1", cfg.w/2)
                     .attr("y1", cfg.h/2)
                     .attr("x2", function(d, i){return cfg.w/2*(1-cfg.factor*Math.sin(i*cfg.radians/total));})
                     .attr("y2", function(d, i){return cfg.h/2*(1-cfg.factor*Math.cos(i*cfg.radians/total));})
-                    .attr("class", "line")
+                    .attr("class", "aline")
                     .style("stroke", "grey")
+                    .style("stroke-width", "0px")
+                    .transition().delay(!axislines.exit().empty() * 300 + !axislines.empty() * 300).duration(500)
                     .style("stroke-width", "1px");
 
-                g.selectAll("polygon").remove()
+                axislines.exit()
+                    .transition().duration(500)
+                    .style("stroke-width", "0px").remove();
 
+                let polys = g.selectAll(".polys").data(netids, function(d) { return d});
 
-                d.forEach(function(y, x){
-                    dataValues = [];
-                    g.selectAll(".nodes")
-                        .data(y, function(j, i){
-                            dataValues.push([
-                                cfg.w/2*(1-(parseFloat(Math.max(j.value, 0))/maxvalue)*cfg.factor*Math.sin(i*cfg.radians/total)),
-                                cfg.h/2*(1-(parseFloat(Math.max(j.value, 0))/maxvalue)*cfg.factor*Math.cos(i*cfg.radians/total)),
-                            ]);
-                        });
+                polys.transition().delay(!polys.exit().empty() * 500).duration(500)
+                    .attr("points",function(d,i) {
+                        let str="";
+                        for(let pti=0;pti<dataValues2[i].length;pti++){
+                            str=str+dataValues2[i][pti][0]+","+dataValues2[i][pti][1]+" ";
+                        }
+                    return str;
+                })
 
-                    dataValues.push(dataValues[0]);
+                polys.enter()
+                    .append("polygon")
+                    .attr("class", "polys")
+                    .attr("points",function(d,i) {
+                        let str="";
+                        for(let pti=0;pti<dataValues2[i].length;pti++){
+                            str=str+dataValues2[i][pti][0]+","+dataValues2[i][pti][1]+" ";
+                        }
+                        return str;
+                    })
+                    .on("mouseover", function() {
+                        d3.selectAll(".polys")
+                            .transition().duration(100)
+                            .style("stroke-width", "0px")
 
-                    g.selectAll(".area")
-                        .data([dataValues])
-                        .enter()
-                        .append("polygon")
-                        .attr("class", "radar-chart-serie"+series)
-                        .style("stroke-width", "1px")
-                        .style("stroke", "black")
-                        .attr("points",function(d) {
-                            var str="";
-                            for(var pti=0;pti<d.length;pti++){
-                                str=str+d[pti][0]+","+d[pti][1]+" ";
-                            }
-                            return str;
-                        })
-                        .style("fill", function(j, i){return d3.interpolateCool(series/4)})
-                        .style("fill-opacity", cfg.opacityArea)
-                        .on('mouseover', function (d){
-                            z = "polygon."+d3.select(this).attr("class");
-                            g.selectAll("polygon")
-                                .transition(200)
-                                .style("fill-opacity", 0.1);
-                            g.selectAll(z)
-                                .transition(200)
-                                .style("fill-opacity", .7);
-                        })
-                        .on('mouseout', function(){
-                            g.selectAll("polygon")
-                                .transition(200)
-                                .style("fill-opacity", cfg.opacityArea);
-                        });
+                        d3.select(this)
+                            .transition().duration(100)
+                            .style("fill-opacity", "1")
+                            .style("stroke-width", "2px")
+                    })
+                    .on("mouseout", function() {
+                        d3.selectAll(".polys")
+                            .style("stroke-width", "0.5px")
+                            .style("fill-opacity", cfg.opacityArea)
+                    })
+                    .style("stroke", "black")
+                    .style("fill", function(j, i){return d3.interpolateCool(j/4)})
+                    .style("stroke-width", "0px")
+                    .style("fill-opacity", "0")
+                    .transition().delay(!polys.exit().empty() * 300 + !polys.empty() * 300).duration(1000)
+                    .style("fill-opacity", cfg.opacityArea)
+                    .style("stroke-width", "0.5px");
 
-                    series++;
-
-                });
-                series=0;
+                polys.exit()
+                    .transition().duration(500)
+                    .style("stroke-width", "0px")
+                    .style("fill-opacity", "0").remove();
 
                 /*let svg = d3.select('#body')
                     .selectAll('svg')
@@ -404,7 +443,7 @@ function actordata(personid){
             //bar chart construction area
             //Inital values
             let barh = 300
-            let barw = 1600
+            let barw = 1400
             let nbar = 20
 
 
@@ -599,6 +638,24 @@ function actordata(personid){
                     .attr("class", "tooltip")
                     .style("opacity", 0);
 
+                //tooltip stay
+                function barstay() {
+                    d3.selectAll(".tooltip")
+                        .transition()
+                        .duration(200) // ms
+                        .style("opacity", 1)
+                        .style("display", 'inline-block')
+                }
+
+                function barleave() {
+                    d3.selectAll(".tooltip")
+                        .transition()
+                        .delay(100)
+                        .duration(200) // ms
+                        .style("opacity", 0)
+                        .style("display", 'none');
+                }
+
                 // tooltip mouseover event handler
                 function tipMouseOver(event, d) {
 
@@ -626,19 +683,26 @@ function actordata(personid){
                     // `${y+400 > thisViz.height ? String(y-(y+400-thisViz.height)):String(y+20)}`
 
                     bartooltip.html(htmlChild)
-                        .style("left", `${String(xbartip + 10)}` + "px")
+                        .style("left", `${String(xbartip)}` + "px")
                         .style("bottom", `${String(window.innerHeight - ybartip-5)}` + "px")
                         .style("position", "absolute")
+                        .on("mouseover", (event,d)=>{
+                            barstay(event,d)
+                        })
+                        .on("mouseout", (event,d)=>{
+                            barleave()
+                        })
                         .transition()
                         .duration(200) // ms
                         .style("opacity", 1)
                         .style("display", 'inline-block'); // started as 0!
 
-                };
+                }
                 // tooltip mouseout event handler
                 function tipMouseOut() {
                     d3.selectAll(".tooltip")
                         .transition()
+                        .delay(200)
                         .duration(200) // ms
                         .style("opacity", 0)
                         .style("display", 'none');
@@ -738,54 +802,66 @@ function actordata(personid){
                         let tempcount = d3.flatRollup(finalnet,
                             v => v.length,
                             c => c,
-                            ).sort((a, b) => -(a[1] - b[1])).slice(1,nnet+1);
+                        ).sort((a, b) => -(a[1] - b[1])).slice(1, nnet + 1);
 
                         //to get random values
-                        let count = tempcount.map(function(d){
+                        let count = tempcount.map(function (d) {
                             let temp = {}
                             temp['id'] = d[0];
                             temp['n'] = d[1];
                             //to prevent offscreening
-                            temp['randx'] = Math.random(d[0]) * (w-200)+100;
-                            temp['randy'] = Math.random(d[0]) * (h-120)+60;
+                            temp['randx'] = Math.random(d[0]) * (w - 200) + 100;
+                            temp['randy'] = Math.random(d[0]) * (h - 120) + 60;
                             //to prevent overlapping with middle
-                            if (w/2-70 < temp['randx'] && temp['randx'] < w/2 && h/2-70 < temp['randy'] && h/2+70 > temp['randy']) {
-                                temp['randx'] = w/2-70
+                            if (w / 2 - 70 < temp['randx'] && temp['randx'] < w / 2 && h / 2 - 70 < temp['randy'] && h / 2 + 70 > temp['randy']) {
+                                temp['randx'] = w / 2 - 70
                             }
-                            if (w/2 < temp['randx'] && temp['randx'] < w/2+70 && h/2-70 < temp['randy'] && h/2+70 > temp['randy']) {
-                                temp['randx'] = w/2+70
+                            if (w / 2 < temp['randx'] && temp['randx'] < w / 2 + 70 && h / 2 - 70 < temp['randy'] && h / 2 + 70 > temp['randy']) {
+                                temp['randx'] = w / 2 + 70
                             }
                             return temp
                         });
 
                         //max and min for scale
-                        let maxnet = d3.max(count, function(d) { return d.n; });
-                        let minnet = d3.min(count, function(d) { return d.n; });
+                        let maxnet = d3.max(count, function (d) {
+                            return d.n;
+                        });
+                        let minnet = d3.min(count, function (d) {
+                            return d.n;
+                        });
 
                         //r scale for chart
                         let r = d3.scaleLinear()
                             .domain([minnet, maxnet])
                             .range([20, 50]);
 
-                        let colorscale = d3.schemeCategory10
-
                         //connectors
-                        let lines = svg.selectAll(".lin").data(count, function(d) { return d.id; })
+                        let lines = svg.selectAll(".lin").data(count, function (d) {
+                            return d.id;
+                        })
 
                         //update
                         lines.transition().duration(500)
-                            .attr("x1", w/2)
-                            .attr("y1", h/2)
-                            .attr("x2", function(d) { return d.randx})
-                            .attr("y2", function(d) { return d.randy})
+                            .attr("x1", w / 2)
+                            .attr("y1", h / 2)
+                            .attr("x2", function (d) {
+                                return d.randx
+                            })
+                            .attr("y2", function (d) {
+                                return d.randy
+                            })
 
                         //create
                         lines.enter().append("line")
                             .attr("class", "lin")
-                            .attr("x1", w/2)
-                            .attr("y1", h/2)
-                            .attr("x2", function(d) { return d.randx})
-                            .attr("y2", function(d) { return d.randy})
+                            .attr("x1", w / 2)
+                            .attr("y1", h / 2)
+                            .attr("x2", function (d) {
+                                return d.randx
+                            })
+                            .attr("y2", function (d) {
+                                return d.randy
+                            })
                             .style("stroke", "black")
                             .style("stroke-width", "0px")
                             .transition().delay(300).duration(300)
@@ -798,27 +874,45 @@ function actordata(personid){
                             .remove();
 
                         //create svg
-                        let circles = svg.selectAll(".circs").data(count, function(d) { return d.id; })
+                        let circles = svg.selectAll(".circs").data(count, function (d) {
+                            return d.id;
+                        })
 
                         //update
                         circles.transition().duration(500)
-                            .attr("cx", function(d) { return d.randx})
-                            .attr("cy", function(d) { return d.randy})
-                            .attr("r", function(d) { return r(d.n)})
-                            .attr("fill", function(d, i) { return d3.interpolateCool(i/nnet)})
+                            .attr("cx", function (d) {
+                                return d.randx
+                            })
+                            .attr("cy", function (d) {
+                                return d.randy
+                            })
+                            .attr("r", function (d) {
+                                return r(d.n)
+                            })
+                            .attr("fill", function (d, i) {
+                                return d3.interpolateCool(i / nnet)
+                            })
 
                         //cricles for network
                         circles.enter().append("circle")
                             .attr("class", "circs")
-                            .attr("cx", function(d) { return d.randx})
-                            .attr("cy", function(d) { return d.randy})
-                            .attr("r", function(d) { return r(d.n)})
-                            .attr("fill", function(d, i) { return d3.interpolateCool(i/nnet)})
-                            .on("mouseover", (event,d)=>{
-                                tipMouseOver(event,d);
+                            .attr("cx", function (d) {
+                                return d.randx
                             })
-                            .on("mouseout",(event,d)=>{
-                                tipMouseOut();
+                            .attr("cy", function (d) {
+                                return d.randy
+                            })
+                            .attr("r", function (d) {
+                                return r(d.n)
+                            })
+                            .attr("fill", function (d, i) {
+                                return d3.interpolateCool(i / nnet)
+                            })
+                            .on("mouseover", (event, d) => {
+                                tipMouseOverNet(event, d);
+                            })
+                            .on("mouseout", (event, d) => {
+                                tipMouseOutNet();
                             })
                             .style("stroke", "black")
                             .style("stroke-opacity", 0)
@@ -840,8 +934,8 @@ function actordata(personid){
                         //Center circle
                         svg.append("circle")
                             .attr("class", "remove")
-                            .attr("cx", w/2)
-                            .attr("cy", h/2)
+                            .attr("cx", w / 2)
+                            .attr("cy", h / 2)
                             .attr("r", 15)
                             .attr("fill", "black");
 
@@ -855,15 +949,36 @@ function actordata(personid){
                             .text(personname)*/
 
                         //tooltip stuff
-                        let tooltip = d3.select("#netchart")
+                        let tooltipnet = d3.select("#netchart")
                             .append("div")
-                            .attr("class", "tooltip")
+                            .attr("class", "tooltipnet")
                             .style("opacity", 0);
 
+                        //tooltip stay
+                        function netstay() {
+                            d3.selectAll(".tooltipnet")
+                                .transition()
+                                .duration(200) // ms
+                                .style("opacity", 1)
+                                .style("display", 'inline-block')
+                        }
+
+                        function netleave() {
+                            d3.selectAll(".tooltipnet")
+                                .transition()
+                                .delay(100)
+                                .duration(200) // ms
+                                .style("opacity", 0)
+                                .style("display", 'none');
+                        }
+
+                        //person click
+                        function clicked() {
+
+                        }
 
                         // tooltip mouseover event handler
-                        function tipMouseOver(event, d) {
-
+                        function tipMouseOverNet(event, d) {
                             fetch(`https://api.themoviedb.org/3/person/${d.id}?api_key=${ApiKey_Thomas}&language=en-US`)
                                 .then(res => res.json())
                                 .then(datatt=> {
@@ -871,6 +986,7 @@ function actordata(personid){
                                     // It changes to d3.pointer(event, target_container) where 2 position values (x, y) of the mouse position are returned.
                                     // 2nd argument is used to calculate the relative location of the tooltip so it can scale upon when the vessel's width and height change.
 
+                                    testid = datatt.id
                                     let [xtip, ytip] = d3.pointer(event, svg);
 
                                     //Declaring gender
@@ -916,30 +1032,38 @@ function actordata(personid){
 
                                     let htmlChild =
                                         "<b>" + datatt.name + "</b><br/>" +
-                                        `<img src='https://image.tmdb.org/t/p/original${datatt.profile_path}' alt="No photo available" id="tooltip-poster" width='200' height='300'><br/>` +
-                                        "<span class = 'gendertext'><b>Gender : </b>" + getgender(datatt.gender) + "</span><br/>" +
-                                        "<span class = 'bdtext'><b>Date of Birth : </b>" + bdtext + "</span><br/>" +
-                                        "<span class = 'bptext'><b>Birthplace : </b>" + bptext + "</span><br/>" +
-                                        "<span class = 'collabtext'><b>Collaborations : </b>" + d.n + "</span>";
+                                        `<img src='https://image.tmdb.org/t/p/original${datatt.profile_path}' alt="No photo available" id="tooltip-poster" width='200' height='300'"><br/>` +
+                                        "<span class = 'gendertext'><b>Gender : </b><br/>" + getgender(datatt.gender) + "</span><br/>" +
+                                        "<span class = 'bdtext'><b>Date of Birth : </b><br/>" + bdtext + "</span><br/>" +
+                                        "<span class = 'bptext'><b>Birthplace : </b><br/>" + bptext + "</span><br/>" +
+                                        "<span class = 'collabtext'><b>Collaborations : </b><br/>" + d.n + "</span>";
 
                                     // `${x+250 > thisViz.width ? String(x-(x+250-thisViz.width)):String(x+10)}`
                                     // `${y+400 > thisViz.height ? String(y-(y+400-thisViz.height)):String(y+20)}`
 
-                                    tooltip.html(htmlChild)
-                                        .style("left", `${String(xtip + 10)}` + "px")
-                                        .style("top", `${String(ytip + 20)}` + "px")
+
+                                    tooltipnet.html(htmlChild)
+                                        .style("left", `${String(xtip)}` + "px")
+                                        .style("top", `${String(ytip)}` + "px")
                                         .style("position", "absolute")
+                                        .on("mouseover", (event,d)=>{
+                                            netstay(event,d)
+                                        })
+                                        .on("mouseout", (event,d)=>{
+                                            netleave()
+                                        })
                                         .transition()
                                         .duration(200) // ms
                                         .style("opacity", 1)
-                                        .style("display", 'inline-block'); // started as 0!
+                                        .style("display", 'inline-block');
 
                                 })
-                        };
+                        }
                         // tooltip mouseout event handler
-                        function tipMouseOut() {
-                            d3.selectAll(".tooltip")
+                        function tipMouseOutNet() {
+                            d3.selectAll(".tooltipnet")
                                 .transition()
+                                .delay(200)
                                 .duration(200) // ms
                                 .style("opacity", 0)
                                 .style("display", 'none');
