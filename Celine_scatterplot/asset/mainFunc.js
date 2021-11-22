@@ -4,7 +4,6 @@ let queryData;
 let movieDataTrendy = [];
 
 let ApiKey_Celine= '063bc2e727886ed9b4ff96cc392ad9c9';
-let movie_id = 550;
 let movieDataSimilar = [];
 
 //sp for mv page
@@ -183,108 +182,7 @@ class Scatterplot_mv{
         .attr("r", d => 7);
 
 }
-// updateChart(genre){
 
-//   let thisViz = this;
-//   // Initialize animation for the scatter plot every time the render method is been called
-//   thisViz.svg
-//       .selectAll('.dot')
-//       .transition()
-//       .duration(500)
-//       .attr("r", 0)
-
-//   thisViz.svg
-//       .select('.scatter-group')
-//       .transition()
-//       .duration(500)
-//       .remove();
-
-
-
-//   thisViz.filterData = thisViz.data.filter((dataPt)=>{
-//     if(genre === 'All'){
-//       return true
-//     }else{
-//       for(let item of dataPt.genres){
-//         if(item.name.includes(genre)){return true}
-//       }
-//     }
-//   });
-
-//   if(thisViz.filterData.length === 0){
-//     return
-//   }
-// ///////---------/////// 
-//   thisViz.coordDomainData = {
-//     'budget' : [...thisViz.filterData.map((dataPt) => dataPt.budget)],
-//     'revenue' : [...thisViz.filterData.map((dataPt) => dataPt.revenue)]
-//   };
-
-//   thisViz.x = d3.scaleLinear()
-//               // Define min & max value within the data we use to visualize
-//               .domain([0, d3.max(thisViz.coordDomainData.budget)+d3.max(thisViz.coordDomainData.budget)*0.05])
-//               .range([thisViz.margin.left,thisViz.width-thisViz.margin.right]);
-
-//   thisViz.y = d3.scaleLinear()
-//               .domain([d3.max(thisViz.coordDomainData.revenue)+d3.max(thisViz.coordDomainData.revenue)*0.05, 0])
-//               .range([thisViz.margin.top,thisViz.height-thisViz.margin.bottom]);
-
-
-//   thisViz.xAxis = this.svg
-//       .select('.axis-x')
-//       .transition().duration(900)
-//       .call(d3.axisBottom(thisViz.x).ticks(6).tickPadding([15]).tickFormat((d)=>{
-//         let textForm;
-
-//         (d / 1e6)/1000 >= 1 ?
-//         textForm = '$' + String(((d / 1e6)/1000).toFixed(1)) + ' billion' :
-//         textForm = '$' + String((d / 1e6).toFixed(1)) + ' million'
-
-//         return textForm;
-//       }));
-
-//   thisViz.yAxis = this.svg
-//       .select('.axis-y')
-//       .transition().duration(900)
-//       .call(d3.axisLeft(thisViz.y).ticks(6).tickPadding([15]).tickFormat((d)=>{
-//         let textForm;
-
-//         (d / 1e6)/1000 >= 1 ?
-//         textForm = '$' + String(((d / 1e6)/1000).toFixed(1)) + ' billion' :
-//         textForm = '$' + String((d / 1e6).toFixed(1)) + ' million'
-
-//         return textForm;
-//       }));
-
-
-//   thisViz.svg
-//       .append('g')
-//       // Append a g tag to group the scatterplot.
-//       .attr('class','scatter-group')
-//       .selectAll('.dot')
-//       // Take in the prebuilt data, filtering the data to show only the ones that match the "_subset" input variable,
-//       // The filtering operation will be triggered whenever users select a region in the dropdown menu.
-//       .data(thisViz.filterData)
-//       .enter()
-//       .append("circle")
-//       .attr('class','dot')
-//       .attr("cx", d => thisViz.x(d.budget)+30)
-//       .attr("cy", d => thisViz.y(d.revenue))
-//       .attr('fill', d => d.revenue > d.budget? '#90cea1' : '#5F1B23')
-//       .on("mouseover", (event,d)=>{
-//         thisViz.tipMouseOver(event,d);
-//       })
-//       .on("mouseout",(event,d)=>{
-//         thisViz.tipMouseOut();
-//       })
-//       .attr('opacity',0.7)
-//       // Set the radius to be 0 first, later will initialize an animation to make it enlarge to 5 over a period of time.
-//       .attr("r", 0)
-//       .transition()
-//       .duration(700)
-//       .attr("r", d => 6);
-
-// }
 }
 // Define a scatterplot object
 class ScatterPlot {
